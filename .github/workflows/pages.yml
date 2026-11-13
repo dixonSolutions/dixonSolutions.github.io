@@ -1,0 +1,36 @@
+name: Godnotic update compatibility
+on:
+  workflow_dispatch:
+    inputs:
+      source_url:
+        description: Current canonical Pages source (old URL only during migration)
+        default: https://dixonsolutions.github.io/Godnotic
+  schedule:
+    - cron: '17 * * * *'
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.publish.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq flatpak ostree
+      - run: ./build.sh
+        env:
+          SOURCE_URL: ${{ inputs.source_url || 'https://dixonsolutions.github.io/Godnotic' }}
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - uses: actions/deploy-pages@v4
+        id: publish
